@@ -26,6 +26,38 @@ def main():
             f"{suffix} : {count}"
         )
 
+    print("\nDataset directories:")
+
+    for country_dir in sorted(DATA_DIR.iterdir()):
+
+        if not country_dir.is_dir():
+            continue 
+
+        suffix_counts = Counter()
+
+        for file_path in country_dir.rglob("*"):
+
+            if not file_path.is_file():
+                continue 
+
+            suffix = file_path.suffix.lower()
+
+            if suffix:
+                suffix_counts[suffix] += 1
+
+
+
+        print(f"\n{country_dir.name}")
+
+        for suffix, count in sorted(
+            suffix_counts.items()
+        ):
+
+            print(
+                f"{suffix} : {count}"
+            )
+
+
 
 if __name__ == "__main__":
     main()
