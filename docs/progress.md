@@ -5,6 +5,7 @@
 ### Goal
 
 Inspect the original RDD2022 dataset before preprocessing
+
 先確認RDD2022原始資料有哪些檔案格式
 
 ### Checks 
