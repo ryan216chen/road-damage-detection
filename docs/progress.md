@@ -1,10 +1,11 @@
 # Development Progress
 
-## 2026/0820 - Raw dataset inspection
+## 2026/08/20 - Raw dataset inspection
 
 ### Goal
 
 Inspect the original RDD2022 dataset before preprocessing
+先確認RDD2022原始資料有哪些檔案格式
 
 ### Checks 
 
@@ -12,7 +13,7 @@ Inspect the original RDD2022 dataset before preprocessing
 
 ### Script 
 
-`scripts/validation/inspect_raw_dataset.py
+`scripts/validation/inspect_raw_dataset.py`
 
 ### Result
 
@@ -22,3 +23,6 @@ Inspect the original RDD2022 dataset before preprocessing
 
 -`.zip` : 7 
 
+### ScreenShot
+
+![Raw dataset file extensions](images/01_raw_dataset_extensions.png)
