@@ -13,6 +13,8 @@ The step is used to understand the raw dataset structure before any conversion, 
 ### Checks 
 
 1. Count file extensions
+2. Count folder type
+3. Count file type and number in every folder
 
 ### Script 
 
