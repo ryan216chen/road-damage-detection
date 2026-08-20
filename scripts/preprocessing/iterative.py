@@ -58,7 +58,7 @@ def copy_dataset(
         output_image_dir = (
             output_dir 
             / "images"
-            / "split"
+            / split 
             / country 
         )
 
