@@ -1,33 +1,55 @@
-from pathlib import Path 
-import numpy as np 
-import torch 
-import torch.nn.functional as F 
-from PIL import Image 
+from pathlib import Path
 
+import numpy as np
+import torch
+import torch.nn.functional as F
+
+from PIL import Image
 from transformers import (
     AutoImageProcessor,
     SegformerForSemanticSegmentation
 )
 
+
+# ========================
+# Config
+# ========================
+
 MODEL_NAME = (
     "nvidia/"
-    "segformer-b2-finetuned-cityscapes-1024-1024"
+    "segformer-b5-finetuned-cityscapes-1024-1024"
 )
 
-INPUT_DIR = Path(r"D:\road-damage-detection\data\iterative\images")
+INPUT_DIR = Path(
+    r"D:\road-damage-detection\data\iterative\images"
+)
 
-OUTPUT_DIR = Path(r"D:\road-damage-detection\data\road_mask")
+OUTPUT_DIR = Path(
+    r"D:\road-damage-detection\data\road_mask\images"
+)
 
-IMAGE_SUFFIXES = {".jpg"}
+IMAGE_SUFFIXES = {
+    ".jpg",
+    ".jpeg",
+    ".png"
+}
+
 
 def load_model():
 
-    device = (
+    device = torch.device(
         "cuda"
         if torch.cuda.is_available()
         else "cpu"
     )
-    print(f"Device : {device}")
+
+    print(
+        f"Device : {device}"
+    )
+
+    print(
+        f"Loading model : {MODEL_NAME}"
+    )
 
     processor = (
         AutoImageProcessor
@@ -52,91 +74,130 @@ def load_model():
         device
     )
 
-    def predict_mask(
-    image_path,
+
+def get_road_mask(
+    image,
     processor,
     model,
     device
-    ):
+):
 
-        image = (
-            Image
-            .open(image_path)
-            .convert("RGB")
+    inputs = processor(
+        images=image,
+        return_tensors="pt"
+    )
+
+    pixel_values = (
+        inputs["pixel_values"]
+        .to(device)
+    )
+
+    with torch.inference_mode():
+
+        outputs = model(
+            pixel_values=pixel_values
         )
 
-        width, height = image.size
+    logits = outputs.logits
 
-        inputs = processor(
-            images=image,
-            return_tensors="pt"
+    # SegFormer 輸出解析度較小
+    # 放大回原圖尺寸
+    logits = F.interpolate(
+        logits,
+        size=(
+            image.height,
+            image.width
+        ),
+        mode="bilinear",
+        align_corners=False
+    )
+
+    prediction = (
+        logits
+        .argmax(dim=1)[0]
+        .cpu()
+        .numpy()
+    )
+
+    road_id = (
+        model.config.label2id["road"]
+    )
+
+    road_mask = (
+        prediction == road_id
+    )
+
+    return road_mask
+
+
+def apply_mask(
+    image,
+    road_mask
+):
+
+    image_array = np.array(
+        image
+    )
+
+    masked_image = (
+        image_array.copy()
+    )
+
+    # 非 road pixel 變黑
+    masked_image[
+        ~road_mask
+    ] = 0
+
+    return Image.fromarray(
+        masked_image
+    )
+
+
+def process_image(
+    image_path,
+    output_path,
+    processor,
+    model,
+    device
+):
+
+    image = (
+        Image.open(
+            image_path
         )
+        .convert("RGB")
+    )
 
-        inputs = {
-            key: value.to(device)
-            for key, value
-            in inputs.items()
-        }
+    road_mask = get_road_mask(
+        image=image,
+        processor=processor,
+        model=model,
+        device=device
+    )
 
-        with torch.no_grad():
+    masked_image = apply_mask(
+        image=image,
+        road_mask=road_mask
+    )
 
-            outputs = model(
-                **inputs
-            )
+    output_path.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
-        logits = outputs.logits
-
-        # SegFormer 輸出的 segmentation
-        # 尺寸通常比原圖小
-        # 所以 resize 回原圖尺寸
-        logits = F.interpolate(
-            logits,
-            size=(
-                height,
-                width
-            ),
-            mode="bilinear",
-            align_corners=False
-        )
-
-        mask = (
-            logits
-            .argmax(dim=1)
-            .squeeze(0)
-            .cpu()
-            .numpy()
-            .astype(np.uint8)
-        )
-
-        return mask
-
-
-def save_mask(
-    mask,
-    output_path
-    ):
-
-        output_path.parent.mkdir(
-            parents=True,
-            exist_ok=True
-        )
-
-        mask_image = (
-            Image.fromarray(
-                mask
-            )
-        )
-
-        mask_image.save(
-            output_path
-        )
+    masked_image.save(
+        output_path,
+        quality=95
+    )
 
 
 def main():
 
-    processor, model, device = (
-        load_model()
-    )
+    (
+        processor,
+        model,
+        device
+    ) = load_model()
 
     image_paths = [
         path
@@ -151,7 +212,8 @@ def main():
     ]
 
     print(
-        f"Images : {len(image_paths)}"
+        f"Total images : "
+        f"{len(image_paths)}"
     )
 
     for index, image_path in enumerate(
@@ -168,18 +230,14 @@ def main():
         output_path = (
             OUTPUT_DIR
             / relative_path
-        ).with_suffix(".png")
-
-        mask = predict_mask(
-            image_path,
-            processor,
-            model,
-            device
         )
 
-        save_mask(
-            mask,
-            output_path
+        process_image(
+            image_path=image_path,
+            output_path=output_path,
+            processor=processor,
+            model=model,
+            device=device
         )
 
         print(
