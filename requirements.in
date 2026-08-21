@@ -4,3 +4,4 @@ numpy
 opencv-python
 iterative-stratification
 ultralytics
+torch 

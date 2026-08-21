@@ -1,1 +1,7 @@
 data/
+
+#model weights
+*.pt
+
+#yolo train output
+runs/
