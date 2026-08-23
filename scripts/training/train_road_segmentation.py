@@ -13,13 +13,13 @@ def main():
     model.train(
         data = DATA_YAML,
         epochs = 150,
-        imgsz = 640,
-        batch = 16,
+        imgsz = 960,
+        batch = 8,
         workers = 4,
         device = 0,
 
         project = r"D:\road-damage-detection\runs\road-segmentation",
-        name = "train_road_segmentation"
+        name = "train_road_segmentation_960"
     )
 
 if __name__ == "__main__":

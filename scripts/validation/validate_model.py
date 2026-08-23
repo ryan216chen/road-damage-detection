@@ -41,13 +41,13 @@ def main():
 
         split = "val",
 
-        imgsz = 640,
+        imgsz = 960,
         batch = 16,
         workers = 4,
         device = 0,
 
         project = str(OUTPUT_DIR),
-        name = "road_segmentation_val"
+        name = "road_segmentation_val2"
     )
 
     print()
