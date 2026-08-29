@@ -140,3 +140,220 @@ def get_candidates(
                 )
 
     return candidates 
+
+
+def save_patches(
+    raw_image,
+    equalized_image,
+    candidates,
+    relative_path,
+    writer 
+):
+
+    for row, col, road_ratio in candidates:
+
+        (
+            raw_patch,
+            x1,
+            y1,
+            x2,
+            y2
+        ) = get_patch(
+            raw_image,
+            row,
+            col 
+        )
+
+
+        (
+            equalized_patch,
+            _,
+            _,
+            _,
+            _ 
+        ) = get_patch(
+            equalized_image,
+            row,
+            col 
+        )
+
+        patch_name = (
+            f"{relative_path.stem}"
+            f"_r{row}_c{col}.jpg"
+        )
+
+        raw_output_dir = (
+            RAW_OUTPUT_ROOT 
+            / relative_path.parent 
+        )
+
+        equalized_output_dir = (
+            EQUALIZED_OUTPUT_ROOT 
+            / relative_path.parent 
+        )
+
+        raw_output_dir.mkdir(parents=True, exist_ok=True)
+
+        equalized_output_dir.mkdir(parents=True, exist_ok=True)
+
+        raw_output_path = (
+            raw_output_dir 
+            / patch_name 
+        )
+
+        equalized_output_path = (
+            equalized_output_dir
+            / patch_name 
+        )
+
+        cv2.imwrite(
+            str(raw_output_path),
+            raw_patch 
+        )
+
+        cv2.imwrite(
+            str(equalized_output_path),
+            equalized_patch 
+        )
+
+        writer.writerow([
+            relative_path.as_posix(),
+            patch_name,
+            row,
+            col,
+            x1,
+            y1,
+            x2,
+            y2,
+            road_ratio 
+        ])
+
+
+def process_image(
+    raw_image_path,
+    writer
+):
+
+    relative_path = (
+        raw_image_path
+        .relative_to(
+            RAW_IMAGE_ROOT
+        )
+    )
+
+    equalized_image_path = (
+        EQUALIZED_IMAGE_ROOT
+        / relative_path
+    )
+
+    mask_path = (
+        MASK_ROOT
+        / relative_path.with_suffix(
+            ".png"
+        )
+    )
+
+    if not equalized_image_path.exists():
+        return
+
+    if not mask_path.exists():
+        return
+
+    raw_image = cv2.imread(
+        str(raw_image_path)
+    )
+
+    equalized_image = cv2.imread(
+        str(equalized_image_path)
+    )
+
+    mask = cv2.imread(
+        str(mask_path),
+        cv2.IMREAD_GRAYSCALE
+    )
+
+    if (
+        raw_image is None
+        or equalized_image is None
+        or mask is None
+    ):
+        return
+
+    candidates = get_candidates(
+        mask
+    )
+
+    save_patches(
+        raw_image,
+        equalized_image,
+        candidates,
+        relative_path,
+        writer
+    )
+
+def main():
+
+    if OUTPUT_ROOT.exists():
+
+        shutil.rmtree(
+            OUTPUT_ROOT
+        )
+
+    RAW_OUTPUT_ROOT.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    EQUALIZED_OUTPUT_ROOT.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    image_paths = list(
+        RAW_IMAGE_ROOT.rglob(
+            "*.jpg"
+        )
+    )
+
+    print(
+        f"[INFO] Images : "
+        f"{len(image_paths)}"
+    )
+
+    with open(
+        CSV_PATH,
+        "w",
+        newline="",
+        encoding="utf-8"
+    ) as file:
+
+        writer = csv.writer(
+            file
+        )
+
+        writer.writerow([
+            "source_image",
+            "patch_name",
+            "row",
+            "col",
+            "x1",
+            "y1",
+            "x2",
+            "y2",
+            "road_ratio"
+        ])
+
+        for raw_image_path in image_paths:
+
+            process_image(
+                raw_image_path,
+                writer
+            )
+
+    print(
+        "[INFO] Patch creation completed."
+    )
+
+
+if __name__ == "__main__":
+    main()
