@@ -1,5 +1,5 @@
-from pathlib import Path 
-from ultralytics import YOLO 
+from pathlib import Path
+from ultralytics import YOLO
 
 FILE_ROOT = (
     Path(__file__)
@@ -8,27 +8,32 @@ FILE_ROOT = (
 )
 
 DATA_ROOT = (
-    FILE_ROOT 
+    FILE_ROOT
     / "data"
-    / "classifier_dataset"
+    / "histogram"
+    / "classifier"
 )
 
 OUTPUT_ROOT = (
-    FILE_ROOT 
+    FILE_ROOT
     / "runs"
     / "classification"
 )
 
-DATASET_NAME = "equalized"
+DATASET_NAMES = [
+    "baseline",
+    "equalized",
+    "matched"
+]
 
 MODEL_NAME = "yolo11m-cls.pt"
- 
 
-def train():
+
+def train(dataset_name):
 
     dataset_path = (
-        DATA_ROOT 
-        / DATASET_NAME 
+        DATA_ROOT
+        / dataset_name
     )
 
     if not dataset_path.exists():
@@ -43,23 +48,31 @@ def train():
         f"{dataset_path}"
     )
 
-    model = YOLO(MODEL_NAME)
+    model = YOLO(
+        MODEL_NAME
+    )
 
     model.train(
-        data = str(dataset_path),
-        epochs = 50,
-        imgsz = 128,
-        batch = 32,
-        workers = 4,
-        seed = 42,
-        deterministic = True,
-        project = str(OUTPUT_ROOT),
-        name = DATASET_NAME 
+        data=str(dataset_path),
+        epochs=50,
+        imgsz=128,
+        batch=32,
+        workers=4,
+        seed=42,
+        deterministic=True,
+        project=str(OUTPUT_ROOT),
+        name=dataset_name
     )
+
 
 def main():
 
-    train()
+    for dataset_name in DATASET_NAMES:
+
+        train(
+            dataset_name
+        )
+
 
 if __name__ == "__main__":
     main()

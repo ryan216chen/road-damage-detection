@@ -16,7 +16,8 @@ FILE_ROOT = (
 DATA_ROOT = (
     FILE_ROOT 
     / "data"
-    / "classifier_dataset"
+    / "histogram"
+    / "classifier"
 )
 
 RUN_ROOT = (
@@ -95,8 +96,9 @@ def evaluate(dataset_name):
 
 def main():
 
-    evaluate("raw")
+    evaluate("baseline")
     evaluate("equalized")
+    evaluate("matched")
 
 if __name__ == "__main__":
     main()
