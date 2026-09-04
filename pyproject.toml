@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "road-damage-detection"
+version = "0.1.0"
+description = "Road damage detection preprocessing and training pipeline"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+    "transformers",
+    "Pillow",
+    "numpy",
+    "opencv-python",
+    "iterative-stratification",
+    "ultralytics",
+    "tqdm",
+]
+
+
+[project.scripts]
+rdd-segment-road = "road_damage_detection.preprocessing.segmentation.segment_road:main"
+
+
+[tool.setuptools.packages.find]
+where = ["src"]

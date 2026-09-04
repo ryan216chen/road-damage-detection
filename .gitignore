@@ -5,3 +5,8 @@ data/
 
 #yolo train output
 runs/
+
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
