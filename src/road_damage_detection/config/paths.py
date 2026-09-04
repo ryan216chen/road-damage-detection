@@ -103,3 +103,17 @@ MATCHED_LABEL_ROOT = (
     HISTOGRAM_MATCHING_ROOT 
     / "labels"
 )
+
+
+#training 
+
+TRAINING_ROOT = (
+    PROJECT_ROOT 
+    / "runs"
+    / "training"
+)
+
+TRAINING_CCONFIG_ROOT = (
+    TRAINING_ROOT 
+    / "configs"
+)

@@ -31,6 +31,6 @@ rdd-match-histogram = "road_damage_detection.preprocessing.histogram_matching.ap
 
 rdd-apply-road-mask = "road_damage_detection.preprocessing.segmentation.apply_road_mask:main"
 
-rdd-equalize-histogram = "road_damage_detection.preprocessing.histogram_equalization.apply_equalization.py"
+rdd-equalize-histogram = "road_damage_detection.preprocessing.histogram_equalization.apply_equalization:main"
 [tool.setuptools.packages.find]
 where = ["src"]
