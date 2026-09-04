@@ -18,12 +18,16 @@ dependencies = [
     "iterative-stratification",
     "ultralytics",
     "tqdm",
+    "scikit-image",
 ]
 
 
 [project.scripts]
 rdd-segment-road = "road_damage_detection.preprocessing.segmentation.segment_road:main"
 
+rdd-build-reference = "road_damage_detection.preprocessing.histogram_matching.build_reference:main"
+
+rdd-match-histogram = "road_damage_detection.preprocessing.histogram_matching.apply_matching:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
