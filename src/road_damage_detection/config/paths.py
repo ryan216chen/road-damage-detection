@@ -22,6 +22,13 @@ ITERATIVE_IMAGE_ROOT = (
     / "images"
 )
 
+ITERATIVE_LABEL_ROOT = (
+    ITERATIVE_ROOT 
+    / "labels"
+)
+
+#baseline
+
 PREPROCESSING_ROOT = (
     DATA_ROOT
     / "preprocessing"
@@ -36,6 +43,41 @@ ROAD_MASK_ROOT = (
     SEGMENTATION_ROOT
     / "masks"
 )
+
+
+SEGMENTATION_IMAGE_ROOT = (
+    SEGMENTATION_ROOT 
+    / "images"
+)
+
+SEGMENTATION_LABEL_ROOT = (
+    SEGMENTATION_ROOT 
+    / "labels"
+)
+
+
+#equalization
+
+HISTOGRAM_EQUALIZATION_ROOT = (
+    PREPROCESSING_ROOT 
+    / "histogram_equalization"
+)
+
+EQUALIZED_IMAGE_ROOT = (
+    HISTOGRAM_EQUALIZATION_ROOT 
+    / "images"
+)
+
+EQUALIZED_LABEL_ROOT = (
+    HISTOGRAM_EQUALIZATION_ROOT 
+    / "labels"
+)
+
+
+
+
+#matching
+
 
 HISTOGRAM_MATCHING_ROOT = (
     PREPROCESSING_ROOT 
@@ -55,4 +97,9 @@ HISTOGRAM_REFERENCE_PATH = (
 MATCHED_IMAGE_ROOT = (
     HISTOGRAM_MATCHING_ROOT
     / "images"
+)
+
+MATCHED_LABEL_ROOT = (
+    HISTOGRAM_MATCHING_ROOT 
+    / "labels"
 )

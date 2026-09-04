@@ -6,14 +6,35 @@ from tqdm import tqdm
 
 from road_damage_detection.config.paths import (
     ITERATIVE_IMAGE_ROOT,
+    ITERATIVE_LABEL_ROOT,
     ROAD_MASK_ROOT,
     HISTOGRAM_REFERENCE_PATH,
-    MATCHED_IMAGE_ROOT 
+    MATCHED_IMAGE_ROOT,
+    MATCHED_LABEL_ROOT
 )
 
 from road_damage_detection.config.settings import (
     IMAGE_EXTENSIONS 
 )
+
+def clear_output_root(
+    root 
+):
+
+    if root.exists():
+
+        print(
+            f"[INFO] Removing existing output : "
+            f"{root}"
+        )
+
+        if root.is_dir():
+            shutil.rmtree(root)
+
+        else:
+            root.unlink()
+
+
 
 def get_image_paths():
 
@@ -88,20 +109,8 @@ def process_dataset(
     reference_l 
 ):
 
-    if MATCHED_IMAGE_ROOT.exists():
-
-        print(
-            f"[INFO] Removing existing output : "
-            f"{MATCHED_IMAGE_ROOT}"
-        )
-
-        if MATCHED_IMAGE_ROOT.is_dir():
-
-            shutil.rmtree(MATCHED_IMAGE_ROOT)
-
-        else:
-
-            MATCHED_IMAGE_ROOT.unlink()
+    clear_output_root(MATCHED_IMAGE_ROOT)
+    clear_output_root(MATCHED_LABEL_ROOT) 
 
     MATCHED_IMAGE_ROOT.mkdir(
         parents=True,
@@ -123,7 +132,6 @@ def process_dataset(
         )
 
     
-    missing_masks = 0
     empty_masks = 0
 
     for image_path in tqdm(
@@ -147,8 +155,10 @@ def process_dataset(
 
         if not mask_path.exists():
 
-            missing_masks += 1
-            continue 
+            raise FileNotFoundError(
+                f"Mask not found : "
+                f"{mask_path}"
+            )
 
         image = cv2.imread(str(image_path))
 
@@ -157,25 +167,36 @@ def process_dataset(
             cv2.IMREAD_GRAYSCALE
         )
 
-        if (
-            image is None 
-            or mask is None 
-        ):
+        if mask is None:
 
-            continue 
+            raise RuntimeError(
+                f"Failed to read mask : "
+                f"{mask_path}"
+            )
+
+        if image is None:
+
+            raise RuntimeError(
+                f"Failed to read image : "
+                f"{image_path}"
+            )
+
+        
 
         if not np.any(
             mask > 0
         ):
 
             empty_masks += 1
-            continue 
+            result = image 
+        
+        else:
 
-        result = apply_matching(
-            image,
-            mask,
-            reference_l 
-        )
+            result = apply_matching(
+                image,
+                mask,
+                reference_l 
+            )
 
         output_path = (
             MATCHED_IMAGE_ROOT 
@@ -192,10 +213,38 @@ def process_dataset(
             result 
         )
 
-    print(
-        f"[INFO] Missing masks : "
-        f"{missing_masks}"
-    )
+
+
+        label_relative_path = (
+            relative_path
+            .with_suffix(".txt")
+        )
+
+        source_label_path = (
+            ITERATIVE_LABEL_ROOT 
+            / label_relative_path 
+        )
+
+        output_label_path = (
+            MATCHED_LABEL_ROOT 
+            / label_relative_path 
+        )
+
+        if not source_label_path.exists():
+
+            raise FileNotFoundError(
+                f"Label not found : "
+                f"{source_label_path}"
+            )
+
+        
+        output_label_path.parent.mkdir(parents=True, exist_ok=True)
+
+        shutil.copy2(
+            source_label_path,
+            output_label_path 
+        )
+
 
     print(
         f"[INFO] Empty masks : "
