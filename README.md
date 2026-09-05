@@ -1,42 +1,25 @@
 # Road Damage Detection 
 
-本專案以道路損壞偵測為研究主題，主要使用 RDD2022 資料集，透過Segformer 與 YOLO 建立影像錢處理與道路損壞偵測流程
+本專案以道路損壞偵測為研究主題，主要使用 RDD2022 資料集，透過SegFormer 與 YOLO 建立影像前處理與道路損壞偵測流程
+
 
 ## Pipeline
 
-RDD2022 
-
-$$
-\downarrow
-$$ 
-
-Iterative Strafication 
-
-$$
-\downarrow
-$$
-
+```text
+RDD2022
+   ↓
+Data Preprocessing
+   ↓
 Road Segmentation
-
-$$
-\downarrow 
-$$ 
-
+   ↓
 ├── Baseline
 ├── Histogram Equalization
 └── Histogram Matching
-
-$$
-\downarrow
-$$ 
-
-YOLO Training 
-
-$$
-\downarrow
-$$ 
-
-Performance Comparison 
+   ↓
+YOLO Training
+   ↓
+Performance Comparison
+```
 
 ## Installation
 
