@@ -37,7 +37,8 @@ TRAINING_ROOT = (
 
 
 def train(
-    dataset_name
+    dataset_name,
+    resume=False 
 ):
 
     dataset_root = (
@@ -74,6 +75,21 @@ names:
         encoding="utf-8"
     )
 
+    if resume:
+
+        checkpoint = (
+            TRAINING_ROOT 
+            / f"{dataset_name}_yolo11m"
+            / "weights"
+            / "last.pt"
+        )
+
+        model = YOLO(checkpoint)
+
+        model.train(resume=True)
+
+        return 
+
     model = YOLO(
         YOLO_MODEL
     )
@@ -107,10 +123,16 @@ def main():
         required=True
     )
 
+    parser.add_argument(
+        "--resume",
+        action="store_true"
+    )
+
     args = parser.parse_args()
 
     train(
-        args.dataset
+        args.dataset,
+        args.resume 
     )
 
 
