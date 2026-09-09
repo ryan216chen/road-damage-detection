@@ -38,5 +38,7 @@ rdd-equalize-histogram = "road_damage_detection.preprocessing.histogram_equaliza
 rdd-train = "road_damage_detection.training.train_detector:main"
 
 rdd-val = "road_damage_detection.evaluation.validate_detector:main"
+
+rdd-predict = "road_damage_detection.evaluation.predict_detector:main" 
 [tool.setuptools.packages.find]
 where = ["src"]

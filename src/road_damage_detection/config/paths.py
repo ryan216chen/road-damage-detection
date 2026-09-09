@@ -117,3 +117,15 @@ TRAINING_CCONFIG_ROOT = (
     TRAINING_ROOT 
     / "configs"
 )
+
+#RDD 2022 test data process
+
+TEST_ROOT = (
+    DATA_ROOT
+    / "test"
+)
+
+TEST_IMAGE_ROOT = (
+    TEST_ROOT 
+    / "images"
+)
