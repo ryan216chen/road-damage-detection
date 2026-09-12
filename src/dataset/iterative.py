@@ -7,8 +7,8 @@ from iterstrat.ml_stratifiers import (
     MultilabelStratifiedShuffleSplit 
 )
 
-data_dir = Path(r"D:\rdd_dataset\RDD2022")
-output_dir = Path(r"D:\road-damage-detection\data\iterative")
+data_dir = Path(r"/home/ryan/Projects/road-damage-detection/data/raw/RDD2022/RDD2022")
+output_dir = Path(r"/home/ryan/Projects/road-damage-detection/data/iterative")
 
 CLASSES = [
     "D00",
@@ -98,6 +98,7 @@ def main():
 
         train_dir = (
             data_dir 
+            / country 
             / country 
             / "train"
         )

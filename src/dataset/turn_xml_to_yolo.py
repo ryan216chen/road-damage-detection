@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 
 DATASET_DIR = Path(
-    r"D:\road-damage-detection\data\iterative"
+    r"/home/ryan/Projects/road-damage-detection/data/iterative"
 )
 
 CLASS_MAP = {
