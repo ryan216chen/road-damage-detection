@@ -116,7 +116,7 @@ def main():
 
         image_dict = {}
 
-        for image_path in image_dir.rglob("*"):
+        for image_path in sorted(image_dir.rglob("*")):
 
             if(
                 image_path.is_file()
@@ -125,7 +125,7 @@ def main():
             ):
                 image_dict[image_path.stem] = image_path 
 
-        for xml_path in xml_dir.rglob("*"):
+        for xml_path in sorted(xml_dir.rglob("*")):
 
             image_path = image_dict.get(xml_path.stem)
 
