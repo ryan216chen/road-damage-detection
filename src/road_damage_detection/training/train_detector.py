@@ -1,12 +1,20 @@
 import argparse
-from pathlib import Path
 
 from ultralytics import YOLO
 
-from road_damage_detection.config.paths import (
-    PROJECT_ROOT,
+from road_damage_detection.config.datasets import (
+    add_dataset_argument,
+    create_dataset_yaml
 )
-
+from road_damage_detection.config.experiments import (
+    add_experiment_arguments,
+    resolve_experiment
+)
+from road_damage_detection.config.runs import (
+    TRAINING_ROOT,
+    get_checkpoint,
+    get_run_name
+)
 from road_damage_detection.config.settings import (
     YOLO_MODEL,
     TRAIN_EPOCHS,
@@ -19,79 +27,11 @@ from road_damage_detection.config.settings import (
     RANDOM_SEED
 )
 
-from road_damage_detection.config.datasets import (
-    add_dataset_argument,
-    create_dataset_yaml
-)
-
-from road_damage_detection.training.mean_subtraction import (
-    MeanSubtractionTrainer
-)
-
-
-TRAINING_ROOT = (
-    PROJECT_ROOT
-    / "runs"
-    / "training"
-)
-
-
-def get_run_name(
-    dataset_name,
-    mean_subtraction=False
-):
-
-    model_name = Path(
-        YOLO_MODEL
-    ).stem
-
-    if mean_subtraction:
-        return (
-            f"{dataset_name}"
-            f"_mean_subtraction_{model_name}"
-        )
-
-    return (
-        f"{dataset_name}_{model_name}"
-    )
-
-
-def get_resume_checkpoint(
-    run_name
-):
-
-    candidates = []
-
-    for run_dir in TRAINING_ROOT.glob(
-        f"{run_name}*"
-    ):
-
-        checkpoint = (
-            run_dir
-            / "weights"
-            / "last.pt"
-        )
-
-        if checkpoint.exists():
-            candidates.append(
-                checkpoint
-            )
-
-    if not candidates:
-        raise FileNotFoundError(
-            f"No resumable checkpoint found for: "
-            f"{run_name}"
-        )
-
-    return max(
-        candidates,
-        key=lambda path: path.stat().st_mtime
-    )
-
 
 def train(
     dataset_name,
     resume=False,
+    experiment_name=None,
     mean_subtraction=False
 ):
 
@@ -104,15 +44,21 @@ def train(
         dataset_name
     )
 
+    experiment = resolve_experiment(
+        experiment_name,
+        mean_subtraction
+    )
+
     run_name = get_run_name(
         dataset_name,
-        mean_subtraction
+        experiment
     )
 
     if resume:
 
-        checkpoint = get_resume_checkpoint(
-            run_name
+        checkpoint = get_checkpoint(
+            run_name,
+            filename="last.pt"
         )
 
         print(
@@ -124,18 +70,18 @@ def train(
             str(checkpoint)
         )
 
-        if mean_subtraction:
+        resume_args = {
+            "resume": True
+        }
 
-            model.train(
-                resume=True,
-                trainer=MeanSubtractionTrainer
+        if experiment.trainer is not None:
+            resume_args["trainer"] = (
+                experiment.trainer
             )
 
-        else:
-
-            model.train(
-                resume=True
-            )
+        model.train(
+            **resume_args
+        )
 
         return
 
@@ -157,10 +103,9 @@ def train(
         "name": run_name
     }
 
-    if mean_subtraction:
-
+    if experiment.trainer is not None:
         train_args["trainer"] = (
-            MeanSubtractionTrainer
+            experiment.trainer
         )
 
     model.train(
@@ -176,22 +121,22 @@ def main():
         parser
     )
 
-    parser.add_argument(
-        "--resume",
-        action="store_true"
+    add_experiment_arguments(
+        parser
     )
 
     parser.add_argument(
-        "--mean-subtraction",
+        "--resume",
         action="store_true"
     )
 
     args = parser.parse_args()
 
     train(
-        args.dataset,
-        args.resume,
-        args.mean_subtraction
+        dataset_name=args.dataset,
+        resume=args.resume,
+        experiment_name=args.experiment,
+        mean_subtraction=args.mean_subtraction
     )
 
 
