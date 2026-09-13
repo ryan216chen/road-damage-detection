@@ -1,4 +1,4 @@
-from copy import copy 
+from copy import copy
 
 from ultralytics.models.yolo.detect import (
     DetectionTrainer,
@@ -6,18 +6,11 @@ from ultralytics.models.yolo.detect import (
     DetectionPredictor
 )
 
-RGB_MEAN = (
-    0.5045821027,
-    0.5066387759,
-    0.4853259145
+from road_damage_detection.config.normalization import (
+    RGB_MEAN,
+    RGB_STD
 )
 
-RGB_STD = (
-    0.2839588386,
-    0.2891190913,
-    0.3154811514
-
-)
 
 def standardize(
     image
@@ -43,51 +36,62 @@ def standardize(
 
     return (
         (image - mean)
-        / std 
+        / std
     )
 
 
 class StandardizationValidator(
-    DetectionValidator 
+    DetectionValidator
 ):
 
     def preprocess(
         self,
-        batch 
+        batch
     ):
 
-        batch = super().preprocess(batch)
+        batch = super().preprocess(
+            batch
+        )
 
-        batch["img"] = standardize(batch["img"])
+        batch["img"] = standardize(
+            batch["img"]
+        )
 
-        return batch 
+        return batch
+
 
 class StandardizationTrainer(
-    DetectionTrainer 
+    DetectionTrainer
 ):
 
     def preprocess_batch(
         self,
-        batch 
+        batch
     ):
 
-        batch = super().preprocess_batch(batch)
+        batch = super().preprocess_batch(
+            batch
+        )
 
-        batch["img"] = standardize(batch["img"])
+        batch["img"] = standardize(
+            batch["img"]
+        )
 
-        return batch 
+        return batch
 
-    
     def get_validator(
-        self 
+        self
     ):
 
         return StandardizationValidator(
             self.test_loader,
-            save_dir = self.save_dir,
-            args = copy(self.args),
-            _callbacks = self.callbacks 
+            save_dir=self.save_dir,
+            args=copy(
+                self.args
+            ),
+            _callbacks=self.callbacks
         )
+
 
 class StandardizationPredictor(
     DetectionPredictor
