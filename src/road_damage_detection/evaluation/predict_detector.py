@@ -5,37 +5,28 @@ from pathlib import Path
 from tqdm import tqdm
 from ultralytics import YOLO
 
+from road_damage_detection.config.datasets import (
+    add_dataset_argument
+)
+from road_damage_detection.config.experiments import (
+    add_experiment_arguments,
+    resolve_experiment
+)
 from road_damage_detection.config.paths import (
     PROJECT_ROOT,
     TEST_IMAGE_ROOT
 )
-
+from road_damage_detection.config.runs import (
+    PREDICTION_ROOT,
+    get_checkpoint,
+    get_run_dir_from_checkpoint,
+    get_run_name
+)
 from road_damage_detection.config.settings import (
     TRAIN_IMAGE_SIZE,
     TRAIN_DEVICE,
-    YOLO_MODEL
 )
 
-from road_damage_detection.config.datasets import (
-    add_dataset_argument
-)
-
-from road_damage_detection.training.mean_subtraction import (
-    MeanSubtractionPredictor
-)
-
-
-TRAINING_ROOT = (
-    PROJECT_ROOT
-    / "runs"
-    / "training"
-)
-
-PREDICTION_ROOT = (
-    PROJECT_ROOT
-    / "runs"
-    / "prediction"
-)
 
 BATCH_SIZE = 64
 
@@ -44,7 +35,9 @@ def predict(
     dataset_name,
     source=None,
     conf=0.25,
-    mean_subtraction=False 
+    weights=None,
+    experiment_name=None,
+    mean_subtraction=False
 ):
 
     if source is None:
@@ -57,7 +50,6 @@ def predict(
             f"Source not found : {source_path}"
         )
 
-
     image_paths = [
         str(path)
         for path in source_path.rglob("*")
@@ -65,67 +57,90 @@ def predict(
         and path.suffix.lower() == ".jpg"
     ]
 
+    experiment = resolve_experiment(
+        experiment_name,
+        mean_subtraction
+    )
 
-    model_name = Path(YOLO_MODEL).stem 
+    run_name = get_run_name(
+        dataset_name,
+        experiment
+    )
 
-    if mean_subtraction:
+    if weights is None:
 
-        run_name = (
-            f"{dataset_name}"
-            f"_mean_subtraction_{model_name}"
+        model_path = get_checkpoint(
+            run_name,
+            filename="best.pt"
         )
 
     else:
 
-        run_name = (
-            f"{dataset_name}_{model_name}"
+        model_path = Path(
+            weights
         )
 
-    
-    model_path = (
-        TRAINING_ROOT 
-        / run_name 
-        / "weights"
-        / "best.pt"
+        if not model_path.is_absolute():
+            model_path = (
+                PROJECT_ROOT
+                / model_path
+            )
+
+        if not model_path.exists():
+            raise FileNotFoundError(
+                f"Model not found : "
+                f"{model_path}"
+            )
+
+    actual_run_name = (
+        get_run_dir_from_checkpoint(
+            model_path
+        ).name
     )
 
-    if not model_path.exists():
-        raise FileNotFoundError(
-            f"Model not found : {model_path}"
-        )
+    print(
+        f"[INFO] Dataset : "
+        f"{dataset_name}"
+    )
 
+    print(
+        f"[INFO] Experiment : "
+        f"{experiment.name}"
+    )
 
-    print(f"[INFO] Dataset : {dataset_name}")
+    print(
+        f"[INFO] Model : "
+        f"{model_path}"
+    )
 
-    print(f"[INFO] Model : {model_path}")
-
-    print(f"[INFO] Source : {source_path}")
-
-
-    output_name = run_name 
+    print(
+        f"[INFO] Source : "
+        f"{source_path}"
+    )
 
     output_path = (
         PREDICTION_ROOT
-        / output_name 
+        / actual_run_name
     )
 
     if output_path.exists():
-        shutil.rmtree(output_path)
+        shutil.rmtree(
+            output_path
+        )
 
     output_path.mkdir(
         parents=True,
         exist_ok=True
     )
 
-
-    model = YOLO(model_path)
-
-
-    submission_path = (
-        output_path 
-        / "submission.csv"
+    model = YOLO(
+        model_path
     )
 
+    submission_path = (
+        output_path
+        / "submission.csv"
+    )
 
     with open(
         submission_path,
@@ -149,37 +164,34 @@ def predict(
                     start:start + BATCH_SIZE
                 ]
 
-
                 predict_args = {
-                    "source" : batch_paths,
-                    "imgsz" : TRAIN_IMAGE_SIZE,
-                    "conf" : conf,
-                    "device" : TRAIN_DEVICE,
-                    "save" : True,
-                    "save_txt" : True,
-                    "project" : str(PREDICTION_ROOT),
-                    "name" : output_name,
-                    "exist_ok" : True,
-                    "stream" : True,
-                    "verbose" : False 
+                    "source": batch_paths,
+                    "imgsz": TRAIN_IMAGE_SIZE,
+                    "conf": conf,
+                    "device": TRAIN_DEVICE,
+                    "save": True,
+                    "save_txt": True,
+                    "project": str(PREDICTION_ROOT),
+                    "name": actual_run_name,
+                    "exist_ok": True,
+                    "stream": True,
+                    "verbose": False
                 }
 
-                if mean_subtraction:
-
-                    predict_args["predictor"] = MeanSubtractionPredictor
+                if experiment.predictor is not None:
+                    predict_args["predictor"] = (
+                        experiment.predictor
+                    )
 
                 results = model.predict(
                     **predict_args
                 )
-
-
 
                 for result in results:
 
                     image_name = Path(
                         result.path
                     ).name
-
 
                     predictions = []
 
@@ -198,7 +210,6 @@ def predict(
                                 .tolist()
                             )
 
-
                             predictions.extend([
                                 str(class_id),
                                 str(int(round(x1))),
@@ -206,7 +217,6 @@ def predict(
                                 str(int(round(x2))),
                                 str(int(round(y2)))
                             ])
-
 
                     prediction_string = " ".join(
                         predictions
@@ -216,9 +226,7 @@ def predict(
                         f"{image_name},{prediction_string}\n"
                     )
 
-
                     progress_bar.update(1)
-
 
     images_output_path = (
         output_path
@@ -229,7 +237,6 @@ def predict(
         parents=True,
         exist_ok=True
     )
-
 
     for path in output_path.iterdir():
 
@@ -246,7 +253,6 @@ def predict(
                 )
             )
 
-
     print(
         f"[INFO] Submission saved to : "
         f"{submission_path}"
@@ -261,7 +267,13 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    add_dataset_argument(parser)
+    add_dataset_argument(
+        parser
+    )
+
+    add_experiment_arguments(
+        parser
+    )
 
     parser.add_argument(
         "--source",
@@ -276,8 +288,8 @@ def main():
     )
 
     parser.add_argument(
-        "--mean-subtraction",
-        action = "store_true"
+        "--weights",
+        default=None
     )
 
     args = parser.parse_args()
@@ -286,6 +298,8 @@ def main():
         dataset_name=args.dataset,
         source=args.source,
         conf=args.conf,
+        weights=args.weights,
+        experiment_name=args.experiment,
         mean_subtraction=args.mean_subtraction
     )
 
