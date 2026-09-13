@@ -1,23 +1,22 @@
-from copy import copy 
+from copy import copy
 
 from ultralytics.models.yolo.detect import (
     DetectionTrainer,
     DetectionValidator,
-    DetectionPredictor 
+    DetectionPredictor
 )
 
-RGB_MEAN = (
-    0.5045821027,
-    0.5066387759,
-    0.4853259145
+from road_damage_detection.config.normalization import (
+    RGB_MEAN
 )
+
 
 def subtract_mean(
-    image 
+    image
 ):
 
     mean = image.new_tensor(
-        RGB_MEAN 
+        RGB_MEAN
     ).view(
         1,
         3,
@@ -26,8 +25,9 @@ def subtract_mean(
     )
 
     return (
-        image - mean 
+        image - mean
     )
+
 
 class MeanSubtractionValidator(
     DetectionValidator
@@ -38,11 +38,16 @@ class MeanSubtractionValidator(
         batch
     ):
 
-        batch = super().preprocess(batch)
+        batch = super().preprocess(
+            batch
+        )
 
-        batch["img"] = subtract_mean(batch["img"])
+        batch["img"] = subtract_mean(
+            batch["img"]
+        )
 
-        return batch 
+        return batch
+
 
 class MeanSubtractionTrainer(
     DetectionTrainer
@@ -50,14 +55,18 @@ class MeanSubtractionTrainer(
 
     def preprocess_batch(
         self,
-        batch 
+        batch
     ):
 
-        batch = super().preprocess_batch(batch)
+        batch = super().preprocess_batch(
+            batch
+        )
 
-        batch["img"] = subtract_mean(batch["img"])
+        batch["img"] = subtract_mean(
+            batch["img"]
+        )
 
-        return batch 
+        return batch
 
     def get_validator(
         self
@@ -65,12 +74,13 @@ class MeanSubtractionTrainer(
 
         return MeanSubtractionValidator(
             self.test_loader,
-            save_dir = self.save_dir,
-            args = copy(
+            save_dir=self.save_dir,
+            args=copy(
                 self.args
             ),
-            _callbacks = self.callbacks 
+            _callbacks=self.callbacks
         )
+
 
 class MeanSubtractionPredictor(
     DetectionPredictor
@@ -78,11 +88,15 @@ class MeanSubtractionPredictor(
 
     def preprocess(
         self,
-        image 
+        image
     ):
 
-        image = super().preprocess(image)
+        image = super().preprocess(
+            image
+        )
 
-        image = subtract_mean(image)
+        image = subtract_mean(
+            image
+        )
 
-        return image 
+        return image
