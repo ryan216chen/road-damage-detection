@@ -6,15 +6,18 @@ from road_damage_detection.config.datasets import (
     add_dataset_argument,
     create_dataset_yaml
 )
+
 from road_damage_detection.config.experiments import (
     add_experiment_arguments,
     resolve_experiment
 )
+
 from road_damage_detection.config.runs import (
     TRAINING_ROOT,
     get_checkpoint,
     get_run_name
 )
+
 from road_damage_detection.config.settings import (
     YOLO_MODEL,
     TRAIN_EPOCHS,
@@ -75,6 +78,7 @@ def train(
         }
 
         if experiment.trainer is not None:
+
             resume_args["trainer"] = (
                 experiment.trainer
             )
@@ -104,6 +108,7 @@ def train(
     }
 
     if experiment.trainer is not None:
+
         train_args["trainer"] = (
             experiment.trainer
         )

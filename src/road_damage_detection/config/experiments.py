@@ -6,6 +6,11 @@ from road_damage_detection.training.mean_subtraction import (
     MeanSubtractionValidator,
 )
 
+from road_damage_detection.training.standardization import (
+    StandardizationPredictor,
+    StandardizationTrainer,
+    StandardizationValidator
+)
 
 @dataclass(frozen=True)
 class Experiment:
@@ -17,8 +22,8 @@ class Experiment:
 
 
 EXPERIMENTS = {
-    "baseline": Experiment(
-        name="baseline"
+    "none": Experiment(
+        name="none"
     ),
     "mean-subtraction": Experiment(
         name="mean-subtraction",
@@ -26,6 +31,13 @@ EXPERIMENTS = {
         trainer=MeanSubtractionTrainer,
         validator=MeanSubtractionValidator,
         predictor=MeanSubtractionPredictor,
+    ),
+    "standardization" : Experiment(
+        name = "standardization",
+        run_suffix = "standardization",
+        trainer = StandardizationTrainer,
+        validator = StandardizationValidator,
+        predictor = StandardizationPredictor
     ),
 }
 
@@ -47,7 +59,7 @@ def resolve_experiment(
 
         if experiment_name not in (
             None,
-            "baseline",
+            "none",
             "mean-subtraction",
         ):
             raise ValueError(
@@ -58,7 +70,7 @@ def resolve_experiment(
         experiment_name = "mean-subtraction"
 
     if experiment_name is None:
-        experiment_name = "baseline"
+        experiment_name = "none"
 
     return get_experiment(
         experiment_name
