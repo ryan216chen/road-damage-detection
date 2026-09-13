@@ -3,7 +3,7 @@ import shutil
 
 from road_damage_detection.config.paths import TEST_IMAGE_ROOT 
 
-RDD2022_ROOT = Path(r"D:\rdd_dataset\RDD2022")
+RDD2022_ROOT = Path(r"/home/ryan/Projects/road-damage-detection/data/raw/RDD2022/RDD2022")
 
 COUNTRIES = [
     "China_Drone",
@@ -27,6 +27,7 @@ def main():
         source_root = (
             RDD2022_ROOT 
             / country 
+            / country
             / "test"
             / "images"
         )
