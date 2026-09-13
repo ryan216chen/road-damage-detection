@@ -4,70 +4,53 @@ from pathlib import Path
 
 from ultralytics import YOLO
 
+from road_damage_detection.config.datasets import (
+    add_dataset_argument,
+    create_dataset_yaml
+)
+from road_damage_detection.config.experiments import (
+    add_experiment_arguments,
+    resolve_experiment
+)
 from road_damage_detection.config.paths import (
     PROJECT_ROOT,
 )
-
+from road_damage_detection.config.runs import (
+    VALIDATION_ROOT,
+    get_checkpoint,
+    get_run_dir_from_checkpoint,
+    get_run_name
+)
 from road_damage_detection.config.settings import (
-    YOLO_MODEL,
     TRAIN_IMAGE_SIZE,
     TRAIN_BATCH_SIZE,
     TRAIN_WORKERS,
     TRAIN_DEVICE,
 )
 
-from road_damage_detection.config.datasets import (
-    add_dataset_argument,
-    create_dataset_yaml
-)
-
-from road_damage_detection.training.mean_subtraction import (
-    MeanSubtractionValidator
-)
-
-TRAINING_ROOT = (
-    PROJECT_ROOT
-    / "runs"
-    / "training"
-)
-
-VALIDATION_ROOT = (
-    PROJECT_ROOT
-    / "runs"
-    / "validation"
-)
-
 
 def validate(
     dataset_name,
     weights=None,
-    mean_subtraction=False 
+    experiment_name=None,
+    mean_subtraction=False
 ):
+
+    experiment = resolve_experiment(
+        experiment_name,
+        mean_subtraction
+    )
+
+    run_name = get_run_name(
+        dataset_name,
+        experiment
+    )
 
     if weights is None:
 
-        model_name = Path(
-            YOLO_MODEL
-        ).stem
-
-        if mean_subtraction:
-
-            run_name = (
-                f"{dataset_name}"
-                f"_mean_subtraction_{model_name}"
-            )
-
-        else:
-
-            run_name = (
-                f"{dataset_name}_{model_name}"
-            )
-
-        weights_path = (
-            TRAINING_ROOT
-            / run_name 
-            / "weights"
-            / "best.pt"
+        weights_path = get_checkpoint(
+            run_name,
+            filename="best.pt"
         )
 
     else:
@@ -77,24 +60,21 @@ def validate(
         )
 
         if not weights_path.is_absolute():
-
             weights_path = (
                 PROJECT_ROOT
                 / weights_path
             )
 
-    if not weights_path.exists():
+        if not weights_path.exists():
+            raise FileNotFoundError(
+                f"Weights not found: "
+                f"{weights_path}"
+            )
 
-        raise FileNotFoundError(
-            f"Weights not found: "
-            f"{weights_path}"
-        )
-
-    run_name = (
-        weights_path
-        .parent
-        .parent 
-        .name 
+    actual_run_name = (
+        get_run_dir_from_checkpoint(
+            weights_path
+        ).name
     )
 
     VALIDATION_ROOT.mkdir(
@@ -104,7 +84,7 @@ def validate(
 
     output_dir = (
         VALIDATION_ROOT
-        / run_name 
+        / actual_run_name
     )
 
     if output_dir.exists():
@@ -128,6 +108,11 @@ def validate(
     )
 
     print(
+        f"[INFO] Experiment: "
+        f"{experiment.name}"
+    )
+
+    print(
         f"[INFO] Weights: "
         f"{weights_path}"
     )
@@ -137,24 +122,26 @@ def validate(
     )
 
     val_args = {
-        "data" : str(yaml_path),
-        "split" : "val",
-        "imgsz" : TRAIN_IMAGE_SIZE,
-        "batch" : TRAIN_BATCH_SIZE,
-        "workers" : TRAIN_WORKERS,
-        "device" : TRAIN_DEVICE,
-        "project" : str(VALIDATION_ROOT),
-        "name" : run_name,
-        "plots" : True,
-        "exist_ok" : True
+        "data": str(yaml_path),
+        "split": "val",
+        "imgsz": TRAIN_IMAGE_SIZE,
+        "batch": TRAIN_BATCH_SIZE,
+        "workers": TRAIN_WORKERS,
+        "device": TRAIN_DEVICE,
+        "project": str(VALIDATION_ROOT),
+        "name": actual_run_name,
+        "plots": True,
+        "exist_ok": True
     }
 
-    if mean_subtraction:
+    if experiment.validator is not None:
+        val_args["validator"] = (
+            experiment.validator
+        )
 
-        val_args["validator"] = MeanSubtractionValidator
-
-    metrics = model.val(**val_args)
-
+    metrics = model.val(
+        **val_args
+    )
 
     print()
     print("===== Overall Metrics =====")
@@ -207,22 +194,22 @@ def main():
         parser
     )
 
+    add_experiment_arguments(
+        parser
+    )
+
     parser.add_argument(
         "--weights",
         default=None
     )
 
-    parser.add_argument(
-        "--mean-subtraction",
-        action = "store_true"
-    )
-
     args = parser.parse_args()
 
     validate(
-        args.dataset,
-        args.weights,
-        args.mean_subtraction
+        dataset_name=args.dataset,
+        weights=args.weights,
+        experiment_name=args.experiment,
+        mean_subtraction=args.mean_subtraction
     )
 
 
