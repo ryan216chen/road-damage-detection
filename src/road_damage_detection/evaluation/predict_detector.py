@@ -20,6 +20,10 @@ from road_damage_detection.config.datasets import (
     add_dataset_argument
 )
 
+from road_damage_detection.training.mean_subtraction import (
+    MeanSubtractionPredictor
+)
+
 
 TRAINING_ROOT = (
     PROJECT_ROOT
@@ -39,7 +43,8 @@ BATCH_SIZE = 64
 def predict(
     dataset_name,
     source=None,
-    conf=0.25
+    conf=0.25,
+    mean_subtraction=False 
 ):
 
     if source is None:
@@ -61,9 +66,25 @@ def predict(
     ]
 
 
+    model_name = Path(YOLO_MODEL).stem 
+
+    if mean_subtraction:
+
+        run_name = (
+            f"{dataset_name}"
+            f"_mean_subtraction_{model_name}"
+        )
+
+    else:
+
+        run_name = (
+            f"{dataset_name}_{model_name}"
+        )
+
+    
     model_path = (
-        TRAINING_ROOT
-        / f"{dataset_name}_{Path(YOLO_MODEL).stem}"
+        TRAINING_ROOT 
+        / run_name 
         / "weights"
         / "best.pt"
     )
@@ -81,9 +102,11 @@ def predict(
     print(f"[INFO] Source : {source_path}")
 
 
+    output_name = run_name 
+
     output_path = (
         PREDICTION_ROOT
-        / dataset_name
+        / output_name 
     )
 
     if output_path.exists():
@@ -99,8 +122,7 @@ def predict(
 
 
     submission_path = (
-        PREDICTION_ROOT
-        / dataset_name
+        output_path 
         / "submission.csv"
     )
 
@@ -128,19 +150,28 @@ def predict(
                 ]
 
 
+                predict_args = {
+                    "source" : batch_paths,
+                    "imgsz" : TRAIN_IMAGE_SIZE,
+                    "conf" : conf,
+                    "device" : TRAIN_DEVICE,
+                    "save" : True,
+                    "save_txt" : True,
+                    "project" : str(PREDICTION_ROOT),
+                    "name" : output_name,
+                    "exist_ok" : True,
+                    "stream" : True,
+                    "verbose" : False 
+                }
+
+                if mean_subtraction:
+
+                    predict_args["predictor"] = MeanSubtractionPredictor
+
                 results = model.predict(
-                    source=batch_paths,
-                    imgsz=TRAIN_IMAGE_SIZE,
-                    conf=conf,
-                    device=TRAIN_DEVICE,
-                    save=True,
-                    save_txt=True,
-                    project=str(PREDICTION_ROOT),
-                    name=dataset_name,
-                    exist_ok=True,
-                    stream=True,
-                    verbose=False
+                    **predict_args
                 )
+
 
 
                 for result in results:
@@ -244,12 +275,18 @@ def main():
         default=0.25
     )
 
+    parser.add_argument(
+        "--mean-subtraction",
+        action = "store_true"
+    )
+
     args = parser.parse_args()
 
     predict(
         dataset_name=args.dataset,
         source=args.source,
-        conf=args.conf
+        conf=args.conf,
+        mean_subtraction=args.mean_subtraction
     )
 
 

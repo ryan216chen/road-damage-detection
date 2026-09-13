@@ -21,6 +21,9 @@ from road_damage_detection.config.datasets import (
     create_dataset_yaml
 )
 
+from road_damage_detection.training.mean_subtraction import (
+    MeanSubtractionValidator
+)
 
 TRAINING_ROOT = (
     PROJECT_ROOT
@@ -38,6 +41,7 @@ VALIDATION_ROOT = (
 def validate(
     dataset_name,
     weights=None,
+    mean_subtraction=False 
 ):
 
     if weights is None:
@@ -46,9 +50,22 @@ def validate(
             YOLO_MODEL
         ).stem
 
+        if mean_subtraction:
+
+            run_name = (
+                f"{dataset_name}"
+                f"_mean_subtraction_{model_name}"
+            )
+
+        else:
+
+            run_name = (
+                f"{dataset_name}_{model_name}"
+            )
+
         weights_path = (
             TRAINING_ROOT
-            / f"{dataset_name}_{model_name}"
+            / run_name 
             / "weights"
             / "best.pt"
         )
@@ -73,6 +90,13 @@ def validate(
             f"{weights_path}"
         )
 
+    run_name = (
+        weights_path
+        .parent
+        .parent 
+        .name 
+    )
+
     VALIDATION_ROOT.mkdir(
         parents=True,
         exist_ok=True
@@ -80,7 +104,7 @@ def validate(
 
     output_dir = (
         VALIDATION_ROOT
-        / dataset_name
+        / run_name 
     )
 
     if output_dir.exists():
@@ -112,18 +136,25 @@ def validate(
         str(weights_path)
     )
 
-    metrics = model.val(
-        data=str(yaml_path),
-        split="val",
-        imgsz=TRAIN_IMAGE_SIZE,
-        batch=TRAIN_BATCH_SIZE,
-        workers=TRAIN_WORKERS,
-        device=TRAIN_DEVICE,
-        project=str(VALIDATION_ROOT),
-        name=dataset_name,
-        plots=True,
-        exist_ok=True,
-    )
+    val_args = {
+        "data" : str(yaml_path),
+        "split" : "val",
+        "imgsz" : TRAIN_IMAGE_SIZE,
+        "batch" : TRAIN_BATCH_SIZE,
+        "workers" : TRAIN_WORKERS,
+        "device" : TRAIN_DEVICE,
+        "project" : str(VALIDATION_ROOT),
+        "name" : run_name,
+        "plots" : True,
+        "exist_ok" : True
+    }
+
+    if mean_subtraction:
+
+        val_args["validator"] = MeanSubtractionValidator
+
+    metrics = model.val(**val_args)
+
 
     print()
     print("===== Overall Metrics =====")
@@ -181,11 +212,17 @@ def main():
         default=None
     )
 
+    parser.add_argument(
+        "--mean-subtraction",
+        action = "store_true"
+    )
+
     args = parser.parse_args()
 
     validate(
         args.dataset,
         args.weights,
+        args.mean_subtraction
     )
 
 

@@ -2,7 +2,8 @@ from copy import copy
 
 from ultralytics.models.yolo.detect import (
     DetectionTrainer,
-    DetectionValidator
+    DetectionValidator,
+    DetectionPredictor 
 )
 
 RGB_MEAN = (
@@ -11,7 +12,7 @@ RGB_MEAN = (
     0.4853259145
 )
 
-def substract_mean(
+def subtract_mean(
     image 
 ):
 
@@ -39,7 +40,7 @@ class MeanSubtractionValidator(
 
         batch = super().preprocess(batch)
 
-        batch["img"] = substract_mean(batch["img"])
+        batch["img"] = subtract_mean(batch["img"])
 
         return batch 
 
@@ -54,7 +55,7 @@ class MeanSubtractionTrainer(
 
         batch = super().preprocess_batch(batch)
 
-        batch["img"] = substract_mean(batch["img"])
+        batch["img"] = subtract_mean(batch["img"])
 
         return batch 
 
@@ -70,3 +71,18 @@ class MeanSubtractionTrainer(
             ),
             _callbacks = self.callbacks 
         )
+
+class MeanSubtractionPredictor(
+    DetectionPredictor
+):
+
+    def preprocess(
+        self,
+        image 
+    ):
+
+        image = super().preprocess(image)
+
+        image = subtract_mean(image)
+
+        return image 
