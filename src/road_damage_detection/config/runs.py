@@ -81,23 +81,39 @@ def get_checkpoint(
     filename="best.pt"
 ):
 
-    run_dir = find_latest_run(
-        run_name
+    run_dirs = sorted(
+        (
+            run_dir
+            for run_dir in TRAINING_ROOT.glob(
+                f"{run_name}*"
+            )
+            if run_dir.is_dir()
+        ),
+        key=lambda path: path.stat().st_mtime,
+        reverse=True
     )
 
-    checkpoint = (
-        run_dir
-        / "weights"
-        / filename
-    )
-
-    if not checkpoint.exists():
+    if not run_dirs:
         raise FileNotFoundError(
-            f"Checkpoint not found: "
-            f"{checkpoint}"
+            f"Training run not found: "
+            f"{run_name}"
         )
 
-    return checkpoint
+    for run_dir in run_dirs:
+
+        checkpoint = (
+            run_dir
+            / "weights"
+            / filename
+        )
+
+        if checkpoint.exists():
+            return checkpoint
+
+    raise FileNotFoundError(
+        f"Checkpoint {filename} not found for: "
+        f"{run_name}"
+    )
 
 
 def get_run_dir_from_checkpoint(
