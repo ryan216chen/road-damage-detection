@@ -1,4 +1,5 @@
 import argparse
+from pathlib import Path
 
 from ultralytics import YOLO
 
@@ -18,16 +19,14 @@ from road_damage_detection.config.settings import (
     RANDOM_SEED
 )
 
-from road_damage_detection.training.mean_subtraction import (
-    MeanSubtractionTrainer
-)
-
 from road_damage_detection.config.datasets import (
-    get_dataset_root,
     add_dataset_argument,
     create_dataset_yaml
 )
 
+from road_damage_detection.training.mean_subtraction import (
+    MeanSubtractionTrainer
+)
 
 
 TRAINING_ROOT = (
@@ -37,48 +36,92 @@ TRAINING_ROOT = (
 )
 
 
+def get_run_name(
+    dataset_name,
+    mean_subtraction=False
+):
+
+    model_name = Path(
+        YOLO_MODEL
+    ).stem
+
+    if mean_subtraction:
+        return (
+            f"{dataset_name}"
+            f"_mean_subtraction_{model_name}"
+        )
+
+    return (
+        f"{dataset_name}_{model_name}"
+    )
+
+
+def get_resume_checkpoint(
+    run_name
+):
+
+    candidates = []
+
+    for run_dir in TRAINING_ROOT.glob(
+        f"{run_name}*"
+    ):
+
+        checkpoint = (
+            run_dir
+            / "weights"
+            / "last.pt"
+        )
+
+        if checkpoint.exists():
+            candidates.append(
+                checkpoint
+            )
+
+    if not candidates:
+        raise FileNotFoundError(
+            f"No resumable checkpoint found for: "
+            f"{run_name}"
+        )
+
+    return max(
+        candidates,
+        key=lambda path: path.stat().st_mtime
+    )
+
+
 def train(
     dataset_name,
     resume=False,
     mean_subtraction=False
 ):
 
-    yaml_path = create_dataset_yaml(dataset_name)
-    
     TRAINING_ROOT.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    create_dataset_yaml(
-        dataset_name,
-        yaml_path
+    yaml_path = create_dataset_yaml(
+        dataset_name
     )
 
-    if mean_subtraction:
-
-        run_name = (
-            f"{dataset_name}"
-            "_mean_subtraction_yolo11m"
-        )
-
-    else:
-
-        run_name = (
-            f"{dataset_name}_yolo11m"
-        )
+    run_name = get_run_name(
+        dataset_name,
+        mean_subtraction
+    )
 
     if resume:
 
-        checkpoint = (
-            TRAINING_ROOT
-            / run_name
-            / "weights"
-            / "last.pt"
+        checkpoint = get_resume_checkpoint(
+            run_name
+        )
+
+        print(
+            f"[INFO] Resuming from: "
+            f"{checkpoint}"
         )
 
         model = YOLO(
-            checkpoint
+            str(checkpoint)
         )
 
         if mean_subtraction:
@@ -129,7 +172,9 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    add_dataset_argument(parser)
+    add_dataset_argument(
+        parser
+    )
 
     parser.add_argument(
         "--resume",
