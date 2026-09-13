@@ -6,9 +6,6 @@ from ultralytics import YOLO
 
 from road_damage_detection.config.paths import (
     PROJECT_ROOT,
-    SEGMENTATION_ROOT,
-    HISTOGRAM_EQUALIZATION_ROOT,
-    HISTOGRAM_MATCHING_ROOT,
 )
 
 from road_damage_detection.config.settings import (
@@ -20,9 +17,10 @@ from road_damage_detection.config.settings import (
 )
 
 from road_damage_detection.config.datasets import (
-    get_dataset_root,
-    add_dataset_argument
+    add_dataset_argument,
+    create_dataset_yaml
 )
+
 
 TRAINING_ROOT = (
     PROJECT_ROOT
@@ -37,15 +35,11 @@ VALIDATION_ROOT = (
 )
 
 
-
 def validate(
     dataset_name,
     weights=None,
 ):
 
-    dataset_root = get_dataset_root(dataset_name)
-
-    # 如果沒有指定 weights，自動找 best.pt
     if weights is None:
 
         model_name = Path(
@@ -65,7 +59,6 @@ def validate(
             weights
         )
 
-        # 相對路徑 → 以專案根目錄為基準
         if not weights_path.is_absolute():
 
             weights_path = (
@@ -85,7 +78,6 @@ def validate(
         exist_ok=True
     )
 
-    # 如果之前的 validation 結果存在，就先刪掉
     output_dir = (
         VALIDATION_ROOT
         / dataset_name
@@ -102,27 +94,8 @@ def validate(
             output_dir
         )
 
-    yaml_path = (
-        VALIDATION_ROOT
-        / f"{dataset_name}.yaml"
-    )
-
-    content = f"""
-path: "{dataset_root.as_posix()}"
-
-train: images/train
-val: images/val
-
-names:
-  0: D00
-  1: D10
-  2: D20
-  3: D40
-"""
-
-    yaml_path.write_text(
-        content.strip(),
-        encoding="utf-8"
+    yaml_path = create_dataset_yaml(
+        dataset_name
     )
 
     print(
@@ -199,7 +172,9 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    add_dataset_argument(parser)
+    add_dataset_argument(
+        parser
+    )
 
     parser.add_argument(
         "--weights",
