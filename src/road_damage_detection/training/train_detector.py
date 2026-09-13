@@ -3,11 +3,7 @@ import argparse
 from ultralytics import YOLO
 
 from road_damage_detection.config.paths import (
-    SEGMENTATION_ROOT,
-    HISTOGRAM_EQUALIZATION_ROOT,
-    HISTOGRAM_MATCHING_ROOT,
     PROJECT_ROOT,
-    ITERATIVE_ROOT
 )
 
 from road_damage_detection.config.settings import (
@@ -26,13 +22,12 @@ from road_damage_detection.training.mean_subtraction import (
     MeanSubtractionTrainer
 )
 
+from road_damage_detection.config.datasets import (
+    get_dataset_root,
+    add_dataset_argument,
+    create_dataset_yaml
+)
 
-DATASET_ROOTS = {
-    "baseline": SEGMENTATION_ROOT,
-    "equalized": HISTOGRAM_EQUALIZATION_ROOT,
-    "matched": HISTOGRAM_MATCHING_ROOT,
-    "iterative": ITERATIVE_ROOT
-}
 
 
 TRAINING_ROOT = (
@@ -48,38 +43,16 @@ def train(
     mean_subtraction=False
 ):
 
-    dataset_root = (
-        DATASET_ROOTS[
-            dataset_name
-        ]
-    )
-
-    yaml_path = (
-        TRAINING_ROOT
-        / f"{dataset_name}.yaml"
-    )
-
+    yaml_path = create_dataset_yaml(dataset_name)
+    
     TRAINING_ROOT.mkdir(
         parents=True,
         exist_ok=True
     )
 
-    content = f"""
-path: "{dataset_root.as_posix()}"
-
-train: images/train
-val: images/val
-
-names:
-  0: D00
-  1: D10
-  2: D20
-  3: D40
-"""
-
-    yaml_path.write_text(
-        content.strip(),
-        encoding="utf-8"
+    create_dataset_yaml(
+        dataset_name,
+        yaml_path
     )
 
     if mean_subtraction:
@@ -156,16 +129,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--dataset",
-        choices=[
-            "baseline",
-            "equalized",
-            "matched",
-            "iterative"
-        ],
-        required=True
-    )
+    add_dataset_argument(parser)
 
     parser.add_argument(
         "--resume",

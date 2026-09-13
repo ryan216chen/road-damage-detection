@@ -19,6 +19,10 @@ from road_damage_detection.config.settings import (
     TRAIN_DEVICE,
 )
 
+from road_damage_detection.config.datasets import (
+    get_dataset_root,
+    add_dataset_argument
+)
 
 TRAINING_ROOT = (
     PROJECT_ROOT
@@ -33,21 +37,13 @@ VALIDATION_ROOT = (
 )
 
 
-DATASET_ROOTS = {
-    "baseline": SEGMENTATION_ROOT,
-    "equalized": HISTOGRAM_EQUALIZATION_ROOT,
-    "matched": HISTOGRAM_MATCHING_ROOT,
-}
-
 
 def validate(
     dataset_name,
     weights=None,
 ):
 
-    dataset_root = DATASET_ROOTS[
-        dataset_name
-    ]
+    dataset_root = get_dataset_root(dataset_name)
 
     # 如果沒有指定 weights，自動找 best.pt
     if weights is None:
@@ -203,15 +199,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--dataset",
-        choices=[
-            "baseline",
-            "equalized",
-            "matched",
-        ],
-        required=True
-    )
+    add_dataset_argument(parser)
 
     parser.add_argument(
         "--weights",

@@ -16,6 +16,10 @@ from road_damage_detection.config.settings import (
     YOLO_MODEL
 )
 
+from road_damage_detection.config.datasets import (
+    add_dataset_argument
+)
+
 
 TRAINING_ROOT = (
     PROJECT_ROOT
@@ -226,15 +230,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--dataset",
-        choices=[
-            "baseline",
-            "equalized",
-            "matched"
-        ],
-        required=True
-    )
+    add_dataset_argument(parser)
 
     parser.add_argument(
         "--source",

@@ -6,9 +6,9 @@ from ultralytics.models.yolo.detect import (
 )
 
 RGB_MEAN = (
-    0.5035016634,
-    0.5056052776,
-    0.4841020498
+    0.5045821027,
+    0.5066387759,
+    0.4853259145
 )
 
 def substract_mean(
