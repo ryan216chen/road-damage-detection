@@ -2,7 +2,7 @@ from road_damage_detection.config.paths import (
     PROJECT_ROOT 
 )
 
-FASTER_RCNN_TRAININIG_ROOT = (
+FASTER_RCNN_TRAINING_ROOT = (
     PROJECT_ROOT
     / "runs"
     / "training"
@@ -23,7 +23,7 @@ def get_run_dir(
 ):
 
     return (
-        FASTER_RCNN_TRAININIG_ROOT
+        FASTER_RCNN_TRAINING_ROOT
         / get_run_name(
             dataset_name 
         )

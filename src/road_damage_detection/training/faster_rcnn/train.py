@@ -2,6 +2,8 @@ import argparse
 
 import torch
 
+from tqdm import tqdm
+
 from torch.optim import SGD
 
 from torch.optim.lr_scheduler import (
@@ -56,10 +58,25 @@ def train(
         else "cpu"
     )
 
+    print(
+        f"[INFO] Device: "
+        f"{device}"
+    )
+
     dataset_root = (
         get_dataset_root(
             dataset_name
         )
+    )
+
+    print(
+        f"[INFO] Dataset: "
+        f"{dataset_name}"
+    )
+
+    print(
+        f"[INFO] Dataset root: "
+        f"{dataset_root}"
     )
 
     run_dir = (
@@ -71,6 +88,11 @@ def train(
     run_dir.mkdir(
         parents=True,
         exist_ok=True
+    )
+
+    print(
+        f"[INFO] Run directory: "
+        f"{run_dir}"
     )
 
     train_dataset = (
@@ -87,6 +109,16 @@ def train(
         )
     )
 
+    print(
+        f"[INFO] Training images: "
+        f"{len(train_dataset)}"
+    )
+
+    print(
+        f"[INFO] Validation images: "
+        f"{len(val_dataset)}"
+    )
+
     train_loader = DataLoader(
         train_dataset,
 
@@ -100,7 +132,13 @@ def train(
             FASTER_RCNN_WORKERS
         ),
 
-        collate_fn=collate_fn
+        collate_fn=(
+            collate_fn
+        ),
+
+        pin_memory=(
+            device.type == "cuda"
+        )
     )
 
     val_loader = DataLoader(
@@ -116,7 +154,13 @@ def train(
             FASTER_RCNN_WORKERS
         ),
 
-        collate_fn=collate_fn
+        collate_fn=(
+            collate_fn
+        ),
+
+        pin_memory=(
+            device.type == "cuda"
+        )
     )
 
     model = build_model()
@@ -127,8 +171,10 @@ def train(
 
     parameters = [
         parameter
+
         for parameter
         in model.parameters()
+
         if parameter.requires_grad
     ]
 
@@ -170,15 +216,31 @@ def train(
 
         total_loss = 0.0
 
-        for (
+        progress_bar = tqdm(
+            train_loader,
+
+            desc=(
+                f"Epoch "
+                f"{epoch + 1}/"
+                f"{FASTER_RCNN_EPOCHS}"
+            ),
+
+            dynamic_ncols=True
+        )
+
+        for batch_index, (
             images,
             targets
-        ) in train_loader:
+        ) in enumerate(
+            progress_bar,
+            start=1
+        ):
 
             images = [
                 image.to(
                     device
                 )
+
                 for image
                 in images
             ]
@@ -193,7 +255,8 @@ def train(
                     for (
                         key,
                         value
-                    ) in target.items()
+                    )
+                    in target.items()
                 }
 
                 for target
@@ -215,17 +278,52 @@ def train(
 
             optimizer.step()
 
-            total_loss += (
+            loss_value = (
                 loss.item()
             )
 
-        scheduler.step()
+            total_loss += (
+                loss_value
+            )
+
+            running_average_loss = (
+                total_loss
+                / batch_index
+            )
+
+            current_lr = (
+                optimizer
+                .param_groups[0][
+                    "lr"
+                ]
+            )
+
+            progress_bar.set_postfix(
+                loss=(
+                    f"{loss_value:.4f}"
+                ),
+
+                avg_loss=(
+                    f"{running_average_loss:.4f}"
+                ),
+
+                lr=(
+                    f"{current_lr:.6f}"
+                )
+            )
 
         average_loss = (
             total_loss
             / len(
                 train_loader
             )
+        )
+
+        print()
+        print(
+            f"[INFO] "
+            f"Validating epoch "
+            f"{epoch + 1}..."
         )
 
         results = evaluate(
@@ -244,6 +342,11 @@ def train(
             results[
                 "map"
             ].item()
+        )
+
+        print()
+        print(
+            "=============================="
         )
 
         print(
@@ -267,6 +370,10 @@ def train(
             f"{map5095:.4f}"
         )
 
+        print(
+            "=============================="
+        )
+
         checkpoint = {
             "epoch": (
                 epoch + 1
@@ -286,10 +393,14 @@ def train(
 
             "map50_95":
                 map5095,
+
+            "loss":
+                average_loss,
         }
 
         torch.save(
             checkpoint,
+
             run_dir
             / "last.pt"
         )
@@ -302,14 +413,21 @@ def train(
 
             torch.save(
                 checkpoint,
+
                 run_dir
                 / "best.pt"
             )
 
             print(
-                "[INFO] "
-                "New best model"
+                f"[INFO] "
+                f"New best model "
+                f"(mAP50 = "
+                f"{best_map50:.4f})"
             )
+
+        scheduler.step()
+
+        print()
 
 
 def main():
