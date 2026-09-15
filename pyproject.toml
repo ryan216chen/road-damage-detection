@@ -20,6 +20,8 @@ dependencies = [
     "ultralytics",
     "tqdm",
     "scikit-image",
+    "torchmetrics",
+    "pycocotools",
 ]
 
 
@@ -40,5 +42,12 @@ rdd-train = "road_damage_detection.training.train_detector:main"
 rdd-val = "road_damage_detection.evaluation.validate_detector:main"
 
 rdd-predict = "road_damage_detection.evaluation.predict_detector:main" 
+
+
+
+
+rdd-train-faster-rcnn = "road_damage_detection.training.faster_rcnn.train:main"
+
+rdd-val-faster-rcnn = "road_damage_detection.evaluation.faster_rcnn.validate:main"
 [tool.setuptools.packages.find]
 where = ["src"]
