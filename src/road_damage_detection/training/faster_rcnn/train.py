@@ -49,7 +49,8 @@ from road_damage_detection.models.faster_rcnn.model import (
 
 
 def train(
-    dataset_name
+    dataset_name,
+    resume=False
 ):
 
     device = torch.device(
@@ -206,9 +207,127 @@ def train(
         )
     )
 
+    start_epoch = 0
+
     best_map50 = -1.0
 
+    if resume:
+
+        checkpoint_path = (
+            run_dir
+            / "last.pt"
+        )
+
+        if not checkpoint_path.exists():
+
+            raise FileNotFoundError(
+                f"Resume checkpoint not found: "
+                f"{checkpoint_path}"
+            )
+
+        print(
+            f"[INFO] Resuming from: "
+            f"{checkpoint_path}"
+        )
+
+        checkpoint = torch.load(
+            checkpoint_path,
+            map_location=device,
+            weights_only=False
+        )
+
+        model.load_state_dict(
+            checkpoint[
+                "model_state_dict"
+            ]
+        )
+
+        optimizer.load_state_dict(
+            checkpoint[
+                "optimizer_state_dict"
+            ]
+        )
+
+        scheduler.load_state_dict(
+            checkpoint[
+                "scheduler_state_dict"
+            ]
+        )
+
+        start_epoch = checkpoint.get(
+            "epoch",
+            0
+        )
+
+        best_map50 = checkpoint.get(
+            "best_map50",
+            -1.0
+        )
+
+        if best_map50 < 0.0:
+
+            best_checkpoint_path = (
+                run_dir
+                / "best.pt"
+            )
+
+            if best_checkpoint_path.exists():
+
+                best_checkpoint = torch.load(
+                    best_checkpoint_path,
+                    map_location="cpu",
+                    weights_only=False
+                )
+
+                best_map50 = best_checkpoint.get(
+                    "best_map50",
+                    best_checkpoint.get(
+                        "map50",
+                        -1.0
+                    )
+                )
+
+            else:
+
+                best_map50 = checkpoint.get(
+                    "map50",
+                    -1.0
+                )
+
+        if not checkpoint.get(
+            "scheduler_stepped",
+            False
+        ):
+
+            scheduler.step()
+
+        print(
+            f"[INFO] Resume epoch: "
+            f"{start_epoch + 1}/"
+            f"{FASTER_RCNN_EPOCHS}"
+        )
+
+        print(
+            f"[INFO] Best mAP50: "
+            f"{best_map50:.4f}"
+        )
+
+        print(
+            f"[INFO] Learning rate: "
+            f"{optimizer.param_groups[0]['lr']:.6f}"
+        )
+
+    if start_epoch >= FASTER_RCNN_EPOCHS:
+
+        print(
+            f"[INFO] Training already completed "
+            f"{start_epoch} epochs."
+        )
+
+        return
+
     for epoch in range(
+        start_epoch,
         FASTER_RCNN_EPOCHS
     ):
 
@@ -374,6 +493,19 @@ def train(
             "=============================="
         )
 
+        is_best = (
+            map50
+            > best_map50
+        )
+
+        if is_best:
+
+            best_map50 = (
+                map50
+            )
+
+        scheduler.step()
+
         checkpoint = {
             "epoch": (
                 epoch + 1
@@ -388,11 +520,17 @@ def train(
             "scheduler_state_dict":
                 scheduler.state_dict(),
 
+            "scheduler_stepped":
+                True,
+
             "map50":
                 map50,
 
             "map50_95":
                 map5095,
+
+            "best_map50":
+                best_map50,
 
             "loss":
                 average_loss,
@@ -405,11 +543,7 @@ def train(
             / "last.pt"
         )
 
-        if map50 > best_map50:
-
-            best_map50 = (
-                map50
-            )
+        if is_best:
 
             torch.save(
                 checkpoint,
@@ -425,8 +559,6 @@ def train(
                 f"{best_map50:.4f})"
             )
 
-        scheduler.step()
-
         print()
 
 
@@ -440,6 +572,11 @@ def main():
         parser
     )
 
+    parser.add_argument(
+        "--resume",
+        action="store_true"
+    )
+
     args = (
         parser.parse_args()
     )
@@ -447,6 +584,9 @@ def main():
     train(
         dataset_name=(
             args.dataset
+        ),
+        resume=(
+            args.resume
         )
     )
 
