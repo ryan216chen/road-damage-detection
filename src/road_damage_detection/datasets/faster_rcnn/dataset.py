@@ -154,6 +154,66 @@ class FasterRCNNDataset(
                     + box_height / 2
                 )
 
+                x1 = max(
+                    0.0,
+                    min(
+                        x1,
+                        float(width)
+                    )
+                )
+
+                y1 = max(
+                    0.0,
+                    min(
+                        y1,
+                        float(height)
+                    )
+                )
+
+                x2 = max(
+                    0.0,
+                    min(
+                        x2,
+                        float(width)
+                    )
+                )
+
+                y2 = max(
+                    0.0,
+                    min(
+                        y2,
+                        float(height)
+                    )
+                )
+
+                if (
+                    x2 <= x1
+                    or y2 <= y1
+                ):
+
+                    print(
+                        f"[WARNING] Skipping invalid box: "
+                        f"{image_path}"
+                    )
+
+                    print(
+                        f"[WARNING] Label: "
+                        f"{label_path}"
+                    )
+
+                    print(
+                        f"[WARNING] Line: "
+                        f"{line}"
+                    )
+
+                    print(
+                        f"[WARNING] Box: "
+                        f"({x1:.2f}, {y1:.2f}, "
+                        f"{x2:.2f}, {y2:.2f})"
+                    )
+
+                    continue
+
                 boxes.append([
                     x1,
                     y1,
