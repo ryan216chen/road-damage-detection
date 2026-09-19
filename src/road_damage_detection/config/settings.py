@@ -17,7 +17,7 @@ MATCHING_WORKERS = 16
 
 #training
 
-YOLO_MODEL = "yolo11m.pt"
+YOLO_MODEL = "yolov9m.pt"
 
 TRAIN_EPOCHS = 100
 
