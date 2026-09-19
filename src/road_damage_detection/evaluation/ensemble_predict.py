@@ -172,7 +172,7 @@ def main():
     with open(
         submission_path,
         "w",
-        encoding="uth-8"
+        encoding="utf-8"
     ) as file:
 
         for start in tqdm(
