@@ -15,7 +15,6 @@ from road_damage_detection.config.settings import (
     TRAIN_BATCH_SIZE,
     TRAIN_DEVICE,
     TRAIN_WORKERS,
-    TRAIN_CLOSE_MOSAIC,
     TRAIN_DETERMINISTIC
 )
 
@@ -38,7 +37,7 @@ def main():
         batch=TRAIN_BATCH_SIZE,
         workers=TRAIN_WORKERS,
         device=TRAIN_DEVICE,
-        deterministic = TRAIN_DETERMINISTIC,
+        deterministic=TRAIN_DETERMINISTIC,
         project=str(
             PROJECT_ROOT
             / "runs"
