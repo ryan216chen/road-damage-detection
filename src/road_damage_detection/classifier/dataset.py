@@ -129,8 +129,7 @@ class IterativeClassificationDataset(
 
             self.torch_transforms = (
                 classify_transforms(
-                    size=args.imgsz,
-                    crop_fraction=args.crop_fraction
+                    size=args.imgsz
                 )
             )
 
