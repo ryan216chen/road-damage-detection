@@ -9,6 +9,10 @@ from ultralytics.models.yolo.classify.val import (
     ClassificationValidator
 )
 
+from ultralytics.utils.torch_utils import (
+    strip_optimizer
+)
+
 from road_damage_detection.classifier.dataset import (
     IterativeClassificationDataset
 )
@@ -108,3 +112,19 @@ class IterativeClassificationTrainer(
                 _callbacks=self.callbacks
             )
         )
+
+    def final_eval(
+        self
+    ):
+
+        if self.last.exists():
+
+            strip_optimizer(
+                self.last
+            )
+
+        if self.best.exists():
+
+            strip_optimizer(
+                self.best
+            )
